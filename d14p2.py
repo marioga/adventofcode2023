@@ -1,72 +1,29 @@
-from enum import Enum, auto
 from pathlib import Path
 
 
-class Direction(Enum):
-    NORTH = auto()
-    WEST = auto()
-    SOUTH = auto()
-    EAST = auto()
-
-
-def transform(mat, m, n, _dir):
-    """ Kinda gross... could be simplified but meh """
-    if _dir == Direction.NORTH:
-        last_hashtag = [-1] * n
-        count_stones = [0] * n
-        for r in range(m):
-            for c in range(n):
-                if mat[r][c] == '#':
-                    last_hashtag[c] = r
-                    count_stones[c] = 0
-                elif mat[r][c] == 'O':
-                    new_r = last_hashtag[c] + count_stones[c] + 1
-                    if new_r < r:
-                        mat[new_r][c] = 'O'
-                        mat[r][c] = '.'
-                    count_stones[c] += 1
-    elif _dir == Direction.WEST:
-        last_hashtag = [-1] * m
-        count_stones = [0] * m
+def transform(mat, m, n):
+    last_hashtag = [-1] * n
+    count_stones = [0] * n
+    for r in range(m):
         for c in range(n):
-            for r in range(m):
-                if mat[r][c] == '#':
-                    last_hashtag[r] = c
-                    count_stones[r] = 0
-                elif mat[r][c] == 'O':
-                    new_c = last_hashtag[r] + count_stones[r] + 1
-                    if new_c < c:
-                        mat[r][new_c] = 'O'
-                        mat[r][c] = '.'
-                    count_stones[r] += 1
-    elif _dir == Direction.SOUTH:
-        last_hashtag = [n] * n
-        count_stones = [0] * n
-        for r in range(m - 1, -1, -1):
-            for c in range(n - 1, -1, -1):
-                if mat[r][c] == '#':
-                    last_hashtag[c] = r
-                    count_stones[c] = 0
-                elif mat[r][c] == 'O':
-                    new_r = last_hashtag[c] - count_stones[c] - 1
-                    if new_r > r:
-                        mat[new_r][c] = 'O'
-                        mat[r][c] = '.'
-                    count_stones[c] += 1
-    elif _dir == Direction.EAST:
-        last_hashtag = [m] * m
-        count_stones = [0] * m
-        for c in range(n - 1, -1, -1):
-            for r in range(m - 1, -1, -1):
-                if mat[r][c] == '#':
-                    last_hashtag[r] = c
-                    count_stones[r] = 0
-                elif mat[r][c] == 'O':
-                    new_c = last_hashtag[r] - count_stones[r] - 1
-                    if new_c > c:
-                        mat[r][new_c] = 'O'
-                        mat[r][c] = '.'
-                    count_stones[r] += 1
+            if mat[r][c] == '#':
+                last_hashtag[c] = r
+                count_stones[c] = 0
+            elif mat[r][c] == 'O':
+                new_r = last_hashtag[c] + count_stones[c] + 1
+                if new_r < r:
+                    mat[new_r][c] = 'O'
+                    mat[r][c] = '.'
+                count_stones[c] += 1
+
+
+def rotate(mat, m, n):
+    ret = [[None] * m for _ in range(n)]
+    for r in range(m):
+        for c in range(n):
+            ret[c][m - 1 - r] = mat[r][c]
+    return ret
+
 
 def get_state(mat, m, n):
     ret = []
@@ -97,18 +54,20 @@ if __name__ == '__main__':
     N = 10**9
     states = {get_state(mat, m, n): 0}
     scores = [get_score(mat, m, n)]
-    for i in range(N):
-        for _dir in [Direction.NORTH, Direction.WEST, Direction.SOUTH, Direction.EAST]:
-            transform(mat, m, n, _dir)
-        state = get_state(mat, m, n)
-        if state in states:
+    offset = period = None
+    for step in range(1, N + 1):
+        for _ in range(4):
+            transform(mat, m, n)
+            mat = rotate(mat, m, n)
+
+        if (state := get_state(mat, m, n)) in states:
+            offset = states[state]
+            period = step - offset
             break
 
-        states[state] = i + 1
+        states[state] = step
         scores.append(get_score(mat, m, n))
 
-    offset = states[state]
-    period = i + 1 - offset
     print(offset, period)
     print(scores[offset + (N - offset) % period])
 
